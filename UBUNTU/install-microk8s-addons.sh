@@ -94,8 +94,7 @@ dashboard_token(){
     echo -e "${CYAN}Opening Dashboard Proxy now...${NC}\n"
 
     # -------- Run dashboard-proxy --------
-    microk8s dashboard-proxy &
-    sleep 2
+    microk8s dashboard-proxy 
 
     echo -e "Access via browser:"
     echo -e "${CYAN}http://$SERVER_IP:10443${NC}\n"
