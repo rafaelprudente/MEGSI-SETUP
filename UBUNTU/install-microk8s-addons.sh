@@ -23,10 +23,11 @@ if ! snap list | grep -q "^microk8s "; then
     exit 1
 fi
 
-microk8s status --wait-ready || { echo -e "${RED}MicroK8s not ready.${NC}"; exit 1; }
+#microk8s status --wait-ready || { echo -e "${RED}MicroK8s not ready.${NC}"; exit 1; }
 
 #=============== GET SERVER IP ===============#
 SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
+
 SCRIPT_DIR="$(pwd)"
 INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 
@@ -43,8 +44,7 @@ microk8s kubectl delete clusterrolebinding admin-user-binding --ignore-not-found
 
 # Cria usuario admin cluster-wide
 microk8s kubectl create serviceaccount admin-user -n kube-system
-microk8s kubectl create clusterrolebinding admin-user-binding \
-    --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user
+microk8s kubectl create clusterrolebinding admin-user-binding --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user
 
 microk8s enable dashboard
 echo -e "${GREEN}✔ Dashboard enabled${NC}"
