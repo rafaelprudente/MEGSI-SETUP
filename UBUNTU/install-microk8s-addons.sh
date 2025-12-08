@@ -40,7 +40,7 @@ microk8s kubectl create serviceaccount admin-user -n kube-system
 microk8s kubectl delete clusterrolebinding admin-user-binding --ignore-not-found
 microk8s kubectl create clusterrolebinding admin-user-binding --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user
 
-microk8s dashboard
+microk8s enable dashboard
 echo -e "${GREEN}✔ Dashboard enabled${NC}"
 
 echo -e "${YELLOW}Waiting for dashboard pod to start...${NC}"
