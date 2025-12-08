@@ -25,7 +25,7 @@ spinner() {
         printf "\r${YELLOW}Preparing download... ${spin:$((i%4)):1}${NC}"
         sleep $delay
     done
-    printf "\r${CYAN}Starting download...    ${NC}\n"
+    printf "\r${CYAN}Starting download...${NC}"
     tput cnorm
 }
 
