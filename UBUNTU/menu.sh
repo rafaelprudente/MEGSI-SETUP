@@ -88,9 +88,6 @@ while true; do
         1) run_script "$SCRIPT_A" "$REPO_BASE/$SCRIPT_A" ;;
         2) run_script "$SCRIPT_B" "$REPO_BASE/$SCRIPT_B" ;;
         3) 
-            echo -e "${GREEN}Exiting...${NC}"
-            sleep 1
-            clear
             exit 0
             ;;
         *)
