@@ -19,14 +19,14 @@ fi
 
 #=============== MICROK8S CHECK ===============#
 if ! snap list | grep -q "^microk8s "; then
-    echo "MicroK8s not installed!"
+    echo -e "${RED}MicroK8s not installed!${NC}"
     exit 1
 fi
 
-microk8s status --wait-ready || { echo "MicroK8s not ready."; exit 1; }
+microk8s status --wait-ready || { echo -e "${RED}MicroK8s not ready.${NC}"; exit 1; }
 
 #=============== GET SERVER IP ===============#
-SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
+SERVER_IP=$(hostname -I | awk '{print $1}')
 SCRIPT_DIR="$(pwd)"
 INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 
@@ -35,17 +35,19 @@ echo -e "${CYAN}Enabling Kubernetes Dashboard (Legacy)...${NC}"
 
 microk8s enable dns rbac
 
+# Remove SA e RB antigas (evita conflito e recria apenas uma vez)
 microk8s kubectl delete serviceaccount admin-user -n kube-system --ignore-not-found
-microk8s kubectl create serviceaccount admin-user -n kube-system
 microk8s kubectl delete clusterrolebinding admin-user-binding --ignore-not-found
-microk8s kubectl create clusterrolebinding admin-user-binding --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user
+
+# Cria usuario admin cluster-wide
+microk8s kubectl create serviceaccount admin-user -n kube-system
+microk8s kubectl create clusterrolebinding admin-user-binding \
+    --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user
 
 microk8s enable dashboard
 echo -e "${GREEN}✔ Dashboard enabled${NC}"
 
 echo -e "${YELLOW}Waiting for dashboard pod to start...${NC}"
-
-# Aguarda pod subir
 for i in {1..30}; do
     POD=$(microk8s kubectl -n kube-system get pods | grep dashboard | awk '{print $1}')
     [[ -n "$POD" ]] && break
@@ -53,18 +55,11 @@ for i in {1..30}; do
 done
 
 if [[ -z "$POD" ]]; then
-    read -p "${RED}Dashboard pod not found! Press ENTER...${NC}"
+    echo -e "${RED}Dashboard pod not found!${NC}"
     exit 1
 fi
 
 echo -e "${GREEN}✔ Pod detected: $POD${NC}\n"
-
-# Cria Service Account caso não exista
-if ! microk8s kubectl -n kube-system get sa | grep -q admin-user; then
-    microk8s kubectl create serviceaccount admin-user -n kube-system
-    microk8s kubectl create clusterrolebinding admin-user-binding \
-        --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user
-fi
 
 # Token
 TOKEN=$(microk8s kubectl -n kube-system get secret \
@@ -72,12 +67,12 @@ TOKEN=$(microk8s kubectl -n kube-system get secret \
     -o jsonpath="{.data.token}" | base64 --decode)
 
 # Firewall
-if command -v ufw; then
+if command -v ufw &>/dev/null; then
     ufw allow 10443/tcp
     echo -e "${GREEN}✔ Port 10443 opened in firewall${NC}"
 fi
 
-# Save info
+# Save access info
 echo "URL: https://$SERVER_IP:10443" > "$INFO_FILE"
 echo "TOKEN:" >> "$INFO_FILE"
 echo "$TOKEN" >> "$INFO_FILE"
@@ -89,7 +84,5 @@ echo -e "Saved in: ${YELLOW}$INFO_FILE${NC}\n"
 
 echo -e "${CYAN}Starting dashboard-proxy... (CTRL+C to exit)${NC}"
 microk8s dashboard-proxy
-
-read -p "ENTER to return..."
 
 exit 0
