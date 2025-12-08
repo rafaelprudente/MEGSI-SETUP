@@ -23,7 +23,7 @@ apt upgrade -y
 apt autoremove -y
 
 # Install required packages
-required_packages=("ufw" "nano" "snap")
+required_packages=("ufw" "nano" "snapd")
 for pkg in "${required_packages[@]}"; do
     if dpkg -s "$pkg"; then
         echo "$pkg is already installed!"
