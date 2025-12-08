@@ -12,6 +12,7 @@ REPO_BASE="https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBU
 
 SCRIPT_A="install-vbox-additions.sh"
 SCRIPT_B="set-static-ip.sh"
+SCRIPT_C="install-microk8s.sh" 
 
 # ======== SIMPLE SPINNER ========
 spinner() {
@@ -76,8 +77,9 @@ menu() {
     echo -e "${CYAN}========================================${NC}"
     echo -e "${YELLOW}1${NC} - Install VirtualBox Additions"
     echo -e "${YELLOW}2${NC} - Set Static IP"
+    echo -e "${YELLOW}3${NC} - Install MicroK8s"
     echo -e ""
-    echo -e "${YELLOW}3${NC} - Exit"
+    echo -e "${YELLOW}99${NC} - Exit"
     echo -e "${CYAN}========================================${NC}"
 }
 
@@ -89,7 +91,8 @@ while true; do
     case "$option" in
         1) run_script "$SCRIPT_A" "$REPO_BASE/$SCRIPT_A" ;;
         2) run_script "$SCRIPT_B" "$REPO_BASE/$SCRIPT_B" ;;
-        3)  clear
+        3) run_script "$SCRIPT_C" "$REPO_BASE/$SCRIPT_C" ;;
+        99)  clear
             exit 0
             ;;
         *)

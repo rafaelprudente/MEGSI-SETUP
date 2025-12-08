@@ -11,5 +11,5 @@ ip a
 ## Execute the command bellow on terminal
 
 ```
-sudo rm -rf menu.sh && curl -L -o menu.sh https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBUNTU/menu.sh && sudo chmod +x menu.sh && ./menu.sh
+sudo rm -rf menu.sh && curl -L -o menu.sh https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBUNTU/menu.sh && sudo chmod +x menu.sh && sudo ./menu.sh
 ```
