@@ -126,7 +126,7 @@ while true; do
             echo -e "${CYAN}Select addons to enable (space separated)${NC}"
             for i in "${!disabled[@]}"; do echo -e "${YELLOW}$((i+1))${NC} - ${disabled[$i]}"; done
             echo -e ""
-            echo -e "${YELLOW}99${NC} - Cancel"
+            echo -e "${YELLOW}99${NC} - Exit"
             read -p "Choose an option: " -a choices
             [[ "${choices[*]}" =~ 99 ]] && continue
 
