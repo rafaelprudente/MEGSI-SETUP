@@ -65,8 +65,6 @@ echo ""
 read -p "Do you want to reboot now? (y/n): " answer
 
 if [[ "$answer" =~ ^[Yy]$ ]]; then
-    echo "Rebooting in 3 seconds..."
-    sleep 3
     reboot
 else
     echo "Reboot canceled."
