@@ -31,85 +31,78 @@ SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
 
 #=============== TOKEN FUNCTION ===============#
 dashboard_token(){
+    SCRIPT_DIR="$(pwd)"                # Pasta onde o script está rodando
+    INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
+
     echo
-    echo -e "${YELLOW}Generating dashboard access token...${NC}"
+    echo -e "${YELLOW}Generating dashboard token...${NC}"
 
-    # --------- Ensure service accounts are ready ---------
-    microk8s kubectl -n kube-system get sa >/dev/null 2>&1 || {
-        echo -e "${RED}Kubernetes not responding. Try again later.${NC}"
-        read -p "ENTER..."
-        return
-    }
-
-    # --------- TOKEN SMART DISCOVERY ---------
+    # -------- Locate secret automatically --------
     ATTEMPTS=0
     TOKEN=""
     SECRET_NAME=""
 
-    echo -e "${CYAN}Locating dashboard token secret...${NC}"
+    echo -e "${CYAN}Locating dashboard secret...${NC}"
 
     while [[ -z "$SECRET_NAME" && $ATTEMPTS -lt 20 ]]; do
-        # Busca secrets de token do SA
         SECRET_NAME=$(microk8s kubectl -n kube-system get secrets \
             --field-selector type=kubernetes.io/service-account-token \
             -o jsonpath="{.items[*].metadata.name}" \
             | tr ' ' '\n' | grep -E 'admin|dashboard' | head -n 1)
 
         ((ATTEMPTS++))
-        echo -ne "Attempt $ATTEMPTS/20 searching for token...\r"
+        echo -ne "Attempt $ATTEMPTS/20...\r"
         sleep 4
     done
 
     echo
 
     if [[ -z "$SECRET_NAME" ]]; then
-        echo -e "${RED}❗ No dashboard token secret found.${NC}"
-        echo "Available secrets:"
+        echo -e "${RED}No dashboard token found.${NC}"
         microk8s kubectl -n kube-system get secret
         read -p "ENTER..."
         return
     fi
 
-    # --------- Extract Token ---------
     TOKEN=$(microk8s kubectl -n kube-system get secret "$SECRET_NAME" \
-            -o jsonpath="{.data.token}" | base64 --decode 2>/dev/null)
+            -o jsonpath="{.data.token}" | base64 --decode)
 
     if [[ -z "$TOKEN" ]]; then
-        echo -e "${RED}❗ Token extraction failed even after secret discovery.${NC}"
-        echo "Try manual command:"
-        echo "microk8s kubectl -n kube-system get secret $SECRET_NAME -o jsonpath='{.data.token}' | base64 --decode"
+        echo -e "${RED}Token extraction failed.${NC}"
         read -p "ENTER..."
         return
     fi
 
-    echo -e "\n${GREEN}✔ TOKEN GENERATED SUCCESSFULLY:${NC}\n$TOKEN\n"
+    echo -e "${GREEN}✔ Token generated successfully:${NC}\n$TOKEN\n"
 
-    # --------- UFW Auto Enable + Rule ---------
+    # -------- Auto enable firewall + allow port --------
     if command -v ufw >/dev/null 2>&1; then
         if ufw status | grep -q inactive; then
-            echo -e "${CYAN}UFW detected but inactive — enabling automatically...${NC}"
+            echo -e "${CYAN}Enabling UFW automatically...${NC}"
             yes | ufw enable >/dev/null 2>&1
         fi
         ufw allow 10443/tcp >/dev/null 2>&1
-        echo -e "${GREEN}✔ Port 10443 opened in UFW${NC}\n"
-    else
-        echo -e "${YELLOW}UFW not installed — skipping firewall rule.${NC}\n"
+        echo -e "${GREEN}✔ Port 10443 opened in firewall${NC}"
     fi
 
-    # --------- SAVE ACCESS INFO ---------
+    # -------- Save info in SCRIPT DIRECTORY --------
     echo "$TOKEN" > "$INFO_FILE"
     echo "http://$SERVER_IP:10443" >> "$INFO_FILE"
     echo "microk8s dashboard-proxy" >> "$INFO_FILE"
 
-    echo -e "${CYAN}Access saved to:${NC} $INFO_FILE"
-    echo -e "\nRun inside terminal:"
-    echo -e "  ${CYAN}microk8s dashboard-proxy${NC}"
-    echo -e "\nThen open in browser:"
-    echo -e "  ${CYAN}http://$SERVER_IP:10443${NC}\n"
+    echo -e "\n${GREEN}Info file saved at:${NC} $INFO_FILE"
+    echo -e "${CYAN}Opening Dashboard Proxy now...${NC}\n"
+
+    # -------- Run dashboard-proxy --------
+    microk8s dashboard-proxy &
+    sleep 2
+
+    echo -e "Access via browser:"
+    echo -e "${CYAN}http://$SERVER_IP:10443${NC}\n"
+    echo -e "TOKEN stored in: ${YELLOW}$INFO_FILE${NC}"
 
     read -p "Press ENTER to return to menu..."
 }
-
 
 #=============== SPINNER ===============#
 spinner(){
