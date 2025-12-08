@@ -53,9 +53,8 @@ for i in {1..30}; do
 done
 
 if [[ -z "$POD" ]]; then
-    echo -e "${RED}Dashboard pod not found!${NC}"
-    read -p "ENTER..."
-    return
+    read -p "${RED}Dashboard pod not found! Press ENTER...${NC}"
+    exit 1
 fi
 
 echo -e "${GREEN}✔ Pod detected: $POD${NC}\n"
