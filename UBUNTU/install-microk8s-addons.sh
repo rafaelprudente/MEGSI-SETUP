@@ -34,42 +34,59 @@ dashboard_token(){
     echo
     echo -e "${YELLOW}Generating access token...${NC}"
 
-    # --------- TOKEN ---------
+    # --------- Ensure admin-user exists ---------
+    if ! microk8s kubectl -n kube-system get secret | grep -q admin-user; then
+        echo -e "${CYAN}Admin-user not found. Creating...${NC}"
+        microk8s kubectl create serviceaccount admin-user -n kube-system >/dev/null 2>&1
+        microk8s kubectl create clusterrolebinding admin-user-binding \
+            --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user >/dev/null 2>&1
+
+        echo -e "${GREEN}Admin-user created. Waiting for system...${NC}"
+        sleep 6
+    fi
+
+    # --------- Create TOKEN ---------
     TOKEN=$(microk8s kubectl -n kube-system get secret \
         $(microk8s kubectl -n kube-system get secret | grep admin-user | awk '{print $1}') \
         -o jsonpath="{.data.token}" | base64 --decode)
 
-    echo -e "${GREEN}TOKEN:${NC}"
-    echo "$TOKEN"
-    echo
-
-    # --------- OPEN PORT ON FIREWALL ---------
-    if command -v ufw >/dev/null 2>&1; then
-        if ufw status | grep -q "Status: active"; then
-            echo -e "${CYAN}Opening port 10443 in UFW firewall...${NC}"
-            ufw allow 10443/tcp >/dev/null 2>&1
-            echo -e "${GREEN}Firewall updated: 10443/tcp allowed.${NC}\n"
-        else
-            echo -e "${YELLOW}UFW installed but not active — skipping firewall rule.${NC}\n"
-        fi
-    else
-        echo -e "${YELLOW}UFW not installed — skipping firewall rule.${NC}\n"
+    if [[ -z "$TOKEN" ]]; then
+        echo -e "${YELLOW}Retrying token generation...${NC}"
+        sleep 4
+        TOKEN=$(microk8s kubectl -n kube-system get secret \
+            $(microk8s kubectl -n kube-system get secret | grep admin-user | awk '{print $1}') \
+            -o jsonpath="{.data.token}" | base64 --decode)
     fi
 
-    # --------- SAVE TO FILE ---------
+    [[ -z "$TOKEN" ]] && echo -e "${RED}❗ Token generation failed.${NC}" && read -p "ENTER..." && return
+
+    echo -e "${GREEN}TOKEN:${NC}\n$TOKEN\n"
+
+    # --------- UFW Auto Enable + Rule ---------
+    if command -v ufw >/dev/null 2>&1; then
+        if ufw status | grep -q inactive; then
+            echo -e "${CYAN}UFW detected but inactive. Enabling automatically...${NC}"
+            yes | ufw enable >/dev/null 2>&1
+            echo -e "${GREEN}✔ UFW enabled${NC}"
+        fi
+
+        ufw allow 10443/tcp >/dev/null 2>&1
+        echo -e "${GREEN}✔ Port 10443/tcp allowed in firewall${NC}\n"
+    else
+        echo -e "${YELLOW}UFW not installed — skipping firewall setup.${NC}\n"
+    fi
+
+    # --------- Save Access Info ---------
     echo "$TOKEN" > "$INFO_FILE"
     echo "http://$SERVER_IP:10443" >> "$INFO_FILE"
     echo "microk8s dashboard-proxy" >> "$INFO_FILE"
 
-    echo -e "${CYAN}Access info saved at:${NC} $INFO_FILE"
-    echo -e "\nRun the proxy to access Dashboard:"
-    echo -e "   ${CYAN}microk8s dashboard-proxy${NC}"
-    echo -e "Then open in browser:"
-    echo -e "   ${CYAN}http://$SERVER_IP:10443${NC}\n"
+    echo -e "${CYAN}Access saved to:${NC} $INFO_FILE"
+    echo -e "\nRun:\n  microk8s dashboard-proxy"
+    echo -e "Open in browser:\n  http://$SERVER_IP:10443\n"
 
     read -p "Press ENTER to continue..."
 }
-
 
 #=============== SPINNER ===============#
 spinner(){
