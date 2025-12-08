@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check if running as root
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run with sudo."
+    echo "Usage: sudo ./set-static-ip.sh"
+    exit 1
+fi
+
 # Update system
 sudo apt update -y >/dev/null 2>&1
 sudo apt upgrade -y >/dev/null 2>&1
