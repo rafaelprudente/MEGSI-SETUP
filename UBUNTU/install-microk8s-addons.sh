@@ -26,14 +26,16 @@ fi
 microk8s status --wait-ready || { echo -e "${RED}MicroK8s not ready.${NC}"; exit 1; }
 
 #=============== GET SERVER IP ===============#
-SERVER_IP=$(hostname -I | awk '{print $1}')
+SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
 SCRIPT_DIR="$(pwd)"
 INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 
 echo
 echo -e "${CYAN}Enabling Kubernetes Dashboard (Legacy)...${NC}"
 
-microk8s enable dns rbac
+microk8s enable dns
+
+microk8s enable rbac
 
 # Remove SA e RB antigas (evita conflito e recria apenas uma vez)
 microk8s kubectl delete serviceaccount admin-user -n kube-system --ignore-not-found
@@ -49,7 +51,7 @@ echo -e "${GREEN}✔ Dashboard enabled${NC}"
 
 echo -e "${YELLOW}Waiting for dashboard pod to start...${NC}"
 for i in {1..30}; do
-    POD=$(microk8s kubectl -n kube-system get pods | grep dashboard | awk '{print $1}')
+    POD=$(microk8s kubectl -n kube-system get pods | grep -E "dashboard|kubernetes-dashboard" | awk '{print $1}')
     [[ -n "$POD" ]] && break
     sleep 3
 done
