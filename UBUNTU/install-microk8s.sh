@@ -18,9 +18,9 @@ if snap list | grep -q "^microk8s "; then
 fi
 
 echo "Updating system (silent mode)..."
-apt update -y
-apt upgrade -y
-apt autoremove -y
+sudo apt update -y
+sudo apt upgrade -y
+sudo apt autoremove -y
 
 # Install required packages
 required_packages=("ufw" "nano" "snapd")
@@ -29,7 +29,7 @@ for pkg in "${required_packages[@]}"; do
         echo "$pkg is already installed!"
     else
         echo "Installing $pkg..."
-        apt install -y "$pkg"
+        sudo apt install -y "$pkg"
     fi
 done
 
@@ -37,7 +37,7 @@ echo "Installing MicroK8s..."
 sudo snap install microk8s --classic
 
 # Permissions
-usermod -aG microk8s "$USER_NAME"
+sudo usermod -aG microk8s "$USER_NAME"
 mkdir -p /home/"$USER_NAME"/.kube
 chmod 700 /home/"$USER_NAME"/.kube
 
@@ -54,7 +54,7 @@ echo
 
 read -p "Reboot now? (y/n): " answer
 if [[ "$answer" =~ ^[Yy]$ ]]; then
-    reboot
+    sudo reboot
 else
     echo "Reboot canceled. Run manually later to finish setup."
 fi
