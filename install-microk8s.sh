@@ -13,7 +13,7 @@ sudo apt upgrade -y >/dev/null 2>&1
 sudo apt autoremove -y >/dev/null 2>&1
 
 # ===== Check and install packages =====
-required_packages=("snap")
+required_packages=("ufw nano snap")
 
 for pkg in "${required_packages[@]}"; do
     if dpkg -s "$pkg" >/dev/null 2>&1; then
