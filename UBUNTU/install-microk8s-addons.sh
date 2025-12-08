@@ -38,69 +38,66 @@ spinner(){
     printf "\rDone!      \n"
 }
 
-#=============== Dashboard HTTP Function ===============#
-enable_dashboard_http(){
+#=============== Legacy Dashboard Function ===============#
+enable_legacy_dashboard(){
     SCRIPT_DIR="$(pwd)"
     INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 
     echo
-    echo -e "${CYAN}Enabling Dashboard in HTTP mode (NO TLS)...${NC}"
+    echo -e "${CYAN}Enabling Kubernetes Dashboard (Legacy - via Proxy)...${NC}"
 
-    # Remove qualquer dashboard antigo
-    microk8s disable dashboard >/dev/null 2>&1
-    microk8s disable dashboard-microk8s >/dev/null 2>&1
-
-    # Instalar dashboard novo + ingress
-    microk8s enable dashboard-microk8s >/dev/null 2>&1 & spinner
-    microk8s enable ingress >/dev/null 2>&1 & spinner
-
+    microk8s enable dashboard >/dev/null 2>&1 & spinner
     echo -e "${GREEN}✔ Dashboard enabled${NC}"
-    echo -e "${GREEN}✔ Ingress enabled${NC}"
 
-cat <<EOF | microk8s kubectl apply -f -
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: dashboard-http
-  namespace: kube-system
-spec:
-  ingressClassName: public
-  rules:
-  - http:
-      paths:
-      - path: /dashboard
-        pathType: Prefix
-        backend:
-          service:
-            name: kubernetes-dashboard-microk8s
-            port:
-              number: 8443
-EOF
+    echo -e "${YELLOW}Waiting for dashboard pod to start...${NC}"
 
-    echo -e "${GREEN}✔ HTTP ingress created${NC}"
+    # Aguarda pod subir
+    for i in {1..30}; do
+        POD=$(microk8s kubectl -n kube-system get pods | grep dashboard | awk '{print $1}')
+        [[ -n "$POD" ]] && break
+        sleep 3
+    done
 
-    microk8s config > "$SCRIPT_DIR/kubeconfig"
-    chmod 600 "$SCRIPT_DIR/kubeconfig"
-
-    if command -v ufw >/dev/null 2>&1; then
-        ufw allow 80/tcp >/dev/null 2>&1
-        echo -e "${GREEN}✔ Port 80 opened (HTTP access)${NC}"
+    if [[ -z "$POD" ]]; then
+        echo -e "${RED}Dashboard pod not found!${NC}"
+        read -p "ENTER..."
+        return
     fi
 
-    URL="http://$SERVER_IP/dashboard"
+    echo -e "${GREEN}✔ Pod detected: $POD${NC}\n"
 
-    echo "Dashboard URL: $URL" > "$INFO_FILE"
-    echo "kubeconfig: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
+    # Cria Service Account caso não exista
+    if ! microk8s kubectl -n kube-system get sa | grep -q admin-user; then
+        microk8s kubectl create serviceaccount admin-user -n kube-system >/dev/null 2>&1
+        microk8s kubectl create clusterrolebinding admin-user-binding \
+            --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user >/dev/null 2>&1
+    fi
 
-    echo -e "\n${GREEN}Dashboard available at:${NC} ${CYAN}$URL${NC}"
-    echo -e "Info saved in: ${YELLOW}$INFO_FILE${NC}"
+    # Token
+    TOKEN=$(microk8s kubectl -n kube-system get secret \
+        $(microk8s kubectl -n kube-system get secret | grep admin-user | awk '{print $1}') \
+        -o jsonpath="{.data.token}" | base64 --decode)
 
-    read -p "Press ENTER to return..."
-}
+    # Firewall
+    if command -v ufw >/dev/null 2>&1; then
+        ufw allow 10443/tcp >/dev/null 2>&1
+        echo -e "${GREEN}✔ Port 10443 opened in firewall${NC}"
+    fi
 
-#=============== Wrapper ===============#
-enable_new_dashboard(){
-    enable_dashboard_http
+    # Save info
+    echo "URL: https://$SERVER_IP:10443" > "$INFO_FILE"
+    echo "TOKEN:" >> "$INFO_FILE"
+    echo "$TOKEN" >> "$INFO_FILE"
+
+    echo -e "\n${GREEN}Dashboard Ready${NC}"
+    echo -e "Open in browser: ${CYAN}https://$SERVER_IP:10443${NC}"
+    echo -e "\nTOKEN:\n${YELLOW}$TOKEN${NC}"
+    echo -e "Saved in: ${YELLOW}$INFO_FILE${NC}\n"
+
+    echo -e "${CYAN}Starting dashboard-proxy... (CTRL+C to exit)${NC}"
+    microk8s dashboard-proxy
+
+    read -p "ENTER to return..."
 }
 
 #============== SHOW STATUS ==============#
@@ -143,10 +140,9 @@ while true; do
             for addon in "${ADDONS[@]}"; do [[ " ${enabled[*]} " =~ " $addon " ]] || disabled+=("$addon"); done
             [[ ${#disabled[@]} == 0 ]] && echo -e "${GREEN}All addons enabled.${NC}" && read -p "ENTER..." && continue
 
-            echo -e "${CYAN}Select addons to enable (space separated)${NC}"
+            echo -e "${CYAN}Select addons (space separated)${NC}"
             for i in "${!disabled[@]}"; do echo -e "${YELLOW}$((i+1))${NC} - ${disabled[$i]}"; done
-            echo -e ""
-            echo -e "${YELLOW}99${NC} - Cancel"
+            echo -e "\n${YELLOW}99${NC} - Cancel"
             read -p "Choose: " -a choices
             [[ "${choices[*]}" =~ 99 ]] && continue
 
@@ -155,7 +151,7 @@ while true; do
                 if [[ $idx -ge 0 && $idx < ${#disabled[@]} ]]; then
                     addon=${disabled[$idx]}
                     microk8s enable "$addon" >/dev/null 2>&1 & spinner
-                    [[ "$addon" == "dashboard" ]] && enable_new_dashboard
+                    [[ "$addon" == "dashboard" ]] && enable_legacy_dashboard
                 fi
             done
         ;;
@@ -163,7 +159,7 @@ while true; do
         2)
             echo "Enabling all addons..."
             (microk8s enable ${ADDONS[*]} >/dev/null 2>&1) & spinner
-            enable_new_dashboard
+            enable_legacy_dashboard
         ;;
 
         3)
