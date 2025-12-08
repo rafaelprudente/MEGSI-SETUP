@@ -4,4 +4,6 @@ sudo curl -# -L -o "mariadb.yaml" "https://raw.githubusercontent.com/rafaelprude
 
 microk8s kubectl apply -f mariadb.yaml
 
+microk8s kubectl port-forward svc/mariadb 3306:3306
+
 microk8s kubectl get pods

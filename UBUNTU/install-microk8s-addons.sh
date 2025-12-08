@@ -29,6 +29,7 @@ INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 echo -e "${CYAN}Enabling Kubernetes Dashboard${NC}"
 
 microk8s enable dashboard
+microk8s enable hostpath-storage
 
 #microk8s enable dns
 
