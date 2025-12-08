@@ -6,9 +6,10 @@
 ip a
 ```
 
+## Connect to VM using ssh terminal
 
-curl -s https://github.com/rafaelprudente/MEGSI-SETUP/blob/main/UBUNTU/install-vbox-additions.sh | bash -s 192.168.56.214
+## Execute the command bellow on terminal
 
-curl -L https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/blob/main/UBUNTU/install-vbox-additions.sh | bash -s 192.168.56.214
-
-sudo curl -L -o menu.sh https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBUNTU/menu.sh && sudo chmod +x menu.sh && ./menu.sh
+```
+sudo rm -rf menu.sh && curl -L -o menu.sh https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBUNTU/menu.sh && sudo chmod +x menu.sh && ./menu.sh
+```
