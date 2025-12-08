@@ -13,7 +13,7 @@ REPO_BASE="https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBU
 SCRIPT_A="install-vbox-additions.sh"
 SCRIPT_B="set-static-ip.sh"
 SCRIPT_C="map-truenas-folder.sh"
-SCRIPT_D="install-microk8s-addons.sh"
+SCRIPT_D="install-microk8s.sh"
 SCRIPT_E="install-microk8s-addons.sh"
 
 # ======== SIMPLE SPINNER ========
