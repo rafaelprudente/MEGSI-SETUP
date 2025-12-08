@@ -34,7 +34,12 @@ for pkg in "${required_packages[@]}"; do
 done
 
 echo "Installing MicroK8s..."
+
 sudo snap install microk8s --classic
+
+sudo ufw allow in on cni0 && sudo ufw allow out on cni0
+
+sudo ufw default allow routed
 
 # Permissions
 sudo usermod -aG microk8s "$USER_NAME"
