@@ -18,14 +18,14 @@ if snap list | grep -q "^microk8s "; then
 fi
 
 echo "Updating system (silent mode)..."
-apt update -y >/dev/null 2>&1
-apt upgrade -y >/dev/null 2>&1
-apt autoremove -y >/dev/null 2>&1
+apt update -y
+apt upgrade -y
+apt autoremove -y
 
 # Install required packages
 required_packages=("ufw" "nano" "snapd")
 for pkg in "${required_packages[@]}"; do
-    if dpkg -s "$pkg" >/dev/null 2>&1; then
+    if dpkg -s "$pkg"; then
         echo "$pkg is already installed!"
     else
         echo "Installing $pkg..."
