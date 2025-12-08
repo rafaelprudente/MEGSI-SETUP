@@ -35,48 +35,45 @@ dashboard_token(){
     INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 
     echo
-    echo -e "${CYAN}Enabling NEW MicroK8s Dashboard...${NC}"
+    echo -e "${CYAN}Enabling new MicroK8s Dashboard with Ingress...${NC}"
 
-    # Habilita apenas o dashboard novo (sem legacy)
-    microk8s disable dashboard >/dev/null 2>&1      # remove legacy se existir
+    microk8s disable dashboard >/dev/null 2>&1
     microk8s enable dashboard-microk8s >/dev/null 2>&1 & spinner
+    microk8s enable ingress >/dev/null 2>&1 & spinner
 
-    echo -e "${GREEN}✔ New Kubernetes Dashboard enabled${NC}"
-    sleep 6
+    echo -e "${GREEN}✔ Dashboard enabled (new mode)${NC}"
+    echo -e "${GREEN}✔ Ingress enabled${NC}"
 
-    # Gerar kubeconfig para acesso
-    echo -e "${YELLOW}Generating kubeconfig for dashboard access...${NC}"
-
+    # Generate kubeconfig
+    echo -e "${YELLOW}Generating kubeconfig...${NC}"
     microk8s config > "$SCRIPT_DIR/kubeconfig"
     chmod 600 "$SCRIPT_DIR/kubeconfig"
 
-    # Abrir porta no firewall
+    # Firewall
     if command -v ufw >/dev/null 2>&1; then
         if ufw status | grep -q inactive; then
-            echo -e "${CYAN}UFW inactive — enabling...${NC}"
+            echo -e "${CYAN}Enabling UFW...${NC}"
             yes | ufw enable >/dev/null 2>&1
         fi
-        ufw allow 10443/tcp >/dev/null 2>&1
-        echo -e "${GREEN}✔ Port 10443 opened in firewall${NC}"
+        ufw allow 80/tcp >/dev/null 2>&1
+        ufw allow 443/tcp >/dev/null 2>&1
+        echo -e "${GREEN}✔ Firewall ports open (80/443)${NC}"
     fi
 
-    # Criar arquivo .info atualizado
-    echo "Dashboard URL: https://$SERVER_IP:10443"  > "$INFO_FILE"
-    echo "Kubeconfig generated at: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
-    echo "Run: microk8s dashboard-proxy --kubeconfig $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
+    DASH_URL="https://$SERVER_IP/dashboard"
 
-    echo -e "\n${GREEN}Access information saved at:${NC} $INFO_FILE"
-    echo -e "Kubeconfig saved at: ${CYAN}$SCRIPT_DIR/kubeconfig${NC}\n"
+    echo "Dashboard URL: $DASH_URL"  >  "$INFO_FILE"
+    echo "kubeconfig: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
 
-    echo -e "${CYAN}Starting dashboard-proxy...${NC}\n"
-    microk8s dashboard-proxy --kubeconfig "$SCRIPT_DIR/kubeconfig"
+    echo -e "\n${GREEN}Dashboard Ready via Ingress${NC}"
+    echo -e "Open in browser:"
+    echo -e "  ${CYAN}$DASH_URL${NC}"
+    echo
+    echo -e "Use kubeconfig:"
+    echo -e "  ${CYAN}KUBECONFIG=$SCRIPT_DIR/kubeconfig kubectl get pods -A${NC}\n"
 
-    echo -e "\nOpen in browser:"
-    echo -e "  ${CYAN}https://$SERVER_IP:10443${NC}\n"
-
-    read -p "Press ENTER to return to menu..."
+    read -p "ENTER to return..."
 }
-
 
 #=============== SPINNER ===============#
 spinner(){
