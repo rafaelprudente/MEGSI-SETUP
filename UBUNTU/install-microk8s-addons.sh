@@ -66,7 +66,8 @@ while true; do
             for i in "${!ADDONS[@]}"; do
                 echo -e "${YELLOW}$((i+1))${NC} - ${ADDONS[$i]}"
             done
-            echo "[99] Cancel"
+            echo -e ""
+            echo -e "${YELLOW}99${NC} Cancel"
             read -p "Enable which addon? " choice
 
             if [[ $choice -eq 99 ]]; then continue; fi
@@ -80,7 +81,6 @@ while true; do
             else
                 echo "Invalid option."
             fi
-            read -p "Press ENTER to continue..."
         ;;
 
         2)
