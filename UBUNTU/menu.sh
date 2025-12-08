@@ -7,17 +7,43 @@ YELLOW='\e[33m'
 CYAN='\e[36m'
 NC='\e[0m' # sem cor
 
+# ======== URLs RAW DO GITHUB ========
+REPO_BASE="https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBUNTU"
+
+SCRIPT_A="install-vbox-additions.sh"
+SCRIPT_B="b.sh"   # substitua futuramente pelo script real
+
 # ======== FUNÇÕES ========
+download_script() {
+    url="$1"
+    file="$2"
+
+    echo -e "${YELLOW}Script '$file' não encontrado. Baixando...${NC}"
+    curl -L -o "$file" "$url"
+
+    if [[ $? -ne 0 || ! -s "$file" ]]; then
+        echo -e "${RED}Falha ao baixar $file! Verifique a URL.${NC}"
+        rm -f "$file" 2>/dev/null
+        return 1
+    fi
+
+    chmod +x "$file"
+    echo -e "${GREEN}Download concluído com sucesso!${NC}"
+}
+
 run_script() {
     script=$1
-    if [[ -f "$script" ]]; then
-        echo -e "${CYAN}Executing $script...${NC}"
-        chmod +x "$script"
-        ./"$script"
-    else
-        echo -e "${RED}ERROR: the script '$script' not found!${NC}"
+    url=$2
+
+    if [[ ! -f "$script" ]]; then
+        download_script "$url" "$script" || return
     fi
-    echo -e "\n${YELLOW}Press ENTER to back to menu...${NC}"
+
+    echo -e "${CYAN}Executando $script...${NC}"
+    chmod +x "$script"
+    ./"$script"
+
+    echo -e "\n${YELLOW}Pressione ENTER para voltar ao menu...${NC}"
     read
 }
 
@@ -40,8 +66,8 @@ while true; do
     read -p "Choose an option: " opcao
 
     case "$opcao" in
-        1) run_script "install-vbox-additions.sh" ;;
-        2) run_script "b.sh" ;;
+        1) run_script "$SCRIPT_A" "$REPO_BASE/$SCRIPT_A" ;;
+        2) run_script "$SCRIPT_B" "$REPO_BASE/$SCRIPT_B" ;;
         3) 
             echo -e "${GREEN}Exiting...${NC}"
             sleep 1
