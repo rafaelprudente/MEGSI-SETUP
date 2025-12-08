@@ -44,9 +44,16 @@ enable_legacy_dashboard(){
     INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 
     echo
-    echo -e "${CYAN}Enabling Kubernetes Dashboard (Legacy - via Proxy)...${NC}"
+    echo -e "${CYAN}Enabling Kubernetes Dashboard (Legacy)...${NC}"
 
-    microk8s enable dashboard >/dev/null 2>&1 & spinner
+    microk8s enable dns rbac >/dev/null 2>&1 & spinner
+    microk8s kubectl delete serviceaccount admin-user -n kube-system --ignore-not-found >/dev/null 2>&1 & spinner
+
+    microk8s kubectl create serviceaccount admin-user -n kube-system >/dev/null 2>&1 & spinner
+    microk8s kubectl delete clusterrolebinding admin-user-binding --ignore-not-found >/dev/null 2>&1 & spinner
+    microk8s kubectl create clusterrolebinding admin-user-binding --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user >/dev/null 2>&1 & spinner
+
+    microk8s dashboard >/dev/null 2>&1 & spinner
     echo -e "${GREEN}✔ Dashboard enabled${NC}"
 
     echo -e "${YELLOW}Waiting for dashboard pod to start...${NC}"
