@@ -33,6 +33,7 @@ else
     echo "perl is already installed!"
 fi
 
+sudo mount /dev/cdrom /media
 
 # ===== Check VBoxLinuxAdditions file =====
 VBOX_FILE="/media/VBoxLinuxAdditions-arm64.run"
