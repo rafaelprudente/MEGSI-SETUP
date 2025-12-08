@@ -23,7 +23,7 @@ if ! snap list | grep -q "^microk8s "; then
     exit 1
 fi
 
-microk8s status --wait-ready >/dev/null 2>&1 || { echo "MicroK8s not ready."; exit 1; }
+microk8s status --wait-ready || { echo "MicroK8s not ready."; exit 1; }
 
 #=============== GET SERVER IP ===============#
 SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
@@ -33,14 +33,14 @@ INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 echo
 echo -e "${CYAN}Enabling Kubernetes Dashboard (Legacy)...${NC}"
 
-microk8s enable dns rbac >/dev/null 2>&1
+microk8s enable dns rbac
 
-microk8s kubectl delete serviceaccount admin-user -n kube-system --ignore-not-found >/dev/null 2>&1
-microk8s kubectl create serviceaccount admin-user -n kube-system >/dev/null 2>&1
-microk8s kubectl delete clusterrolebinding admin-user-binding --ignore-not-found >/dev/null 2>&1
-microk8s kubectl create clusterrolebinding admin-user-binding --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user >/dev/null 2>&1
+microk8s kubectl delete serviceaccount admin-user -n kube-system --ignore-not-found
+microk8s kubectl create serviceaccount admin-user -n kube-system
+microk8s kubectl delete clusterrolebinding admin-user-binding --ignore-not-found
+microk8s kubectl create clusterrolebinding admin-user-binding --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user
 
-microk8s dashboard >/dev/null 2>&1
+microk8s dashboard
 echo -e "${GREEN}✔ Dashboard enabled${NC}"
 
 echo -e "${YELLOW}Waiting for dashboard pod to start...${NC}"
@@ -62,9 +62,9 @@ echo -e "${GREEN}✔ Pod detected: $POD${NC}\n"
 
 # Cria Service Account caso não exista
 if ! microk8s kubectl -n kube-system get sa | grep -q admin-user; then
-    microk8s kubectl create serviceaccount admin-user -n kube-system >/dev/null 2>&1
+    microk8s kubectl create serviceaccount admin-user -n kube-system
     microk8s kubectl create clusterrolebinding admin-user-binding \
-        --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user >/dev/null 2>&1
+        --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user
 fi
 
 # Token
@@ -73,8 +73,8 @@ TOKEN=$(microk8s kubectl -n kube-system get secret \
     -o jsonpath="{.data.token}" | base64 --decode)
 
 # Firewall
-if command -v ufw >/dev/null 2>&1; then
-    ufw allow 10443/tcp >/dev/null 2>&1
+if command -v ufw; then
+    ufw allow 10443/tcp
     echo -e "${GREEN}✔ Port 10443 opened in firewall${NC}"
 fi
 
