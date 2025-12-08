@@ -64,6 +64,8 @@ run_script() {
 
     echo -e "\n${YELLOW}Press ENTER to return to the menu...${NC}"
     read
+
+    sudo rm -rf $1
 }
 
 # ======== MENU ========
