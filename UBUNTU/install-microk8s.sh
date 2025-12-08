@@ -23,7 +23,7 @@ apt upgrade -y
 apt autoremove -y
 
 # Install required packages
-required_packages=("ufw" "nano" "snapd")
+required_packages=("ufw" "nano" "snap")
 for pkg in "${required_packages[@]}"; do
     if dpkg -s "$pkg"; then
         echo "$pkg is already installed!"
@@ -34,7 +34,7 @@ for pkg in "${required_packages[@]}"; do
 done
 
 echo "Installing MicroK8s..."
-snap install microk8s --classic --channel=1.33
+sudo snap install microk8s --classic
 
 # Permissions
 usermod -aG microk8s "$USER_NAME"

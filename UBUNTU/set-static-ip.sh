@@ -46,7 +46,7 @@ network:
 EOF
 
 echo "Applying Netplan..."
-netplan apply
+sudo netplan apply
 
 echo "---------------------------------------------"
 echo "Static IP successfully configured!"
