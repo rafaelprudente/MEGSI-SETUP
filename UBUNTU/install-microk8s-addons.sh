@@ -41,39 +41,45 @@ dashboard_token(){
         microk8s kubectl create clusterrolebinding admin-user-binding \
             --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user >/dev/null 2>&1
 
-        echo -e "${GREEN}Admin-user created. Waiting for system...${NC}"
-        sleep 6
+        echo -e "${GREEN}Admin-user created, waiting for Kubernetes...${NC}"
     fi
 
-    # --------- Create TOKEN ---------
-    TOKEN=$(microk8s kubectl -n kube-system get secret \
-        $(microk8s kubectl -n kube-system get secret | grep admin-user | awk '{print $1}') \
-        -o jsonpath="{.data.token}" | base64 --decode)
+    # --------- TOKEN RETRY LOOP ---------
+    ATTEMPTS=0
+    TOKEN=""
 
-    if [[ -z "$TOKEN" ]]; then
-        echo -e "${YELLOW}Retrying token generation...${NC}"
+    echo -e "${CYAN}Waiting for dashboard secret to be generated...${NC}"
+
+    while [[ -z "$TOKEN" && $ATTEMPTS -lt 15 ]]; do
         sleep 4
         TOKEN=$(microk8s kubectl -n kube-system get secret \
-            $(microk8s kubectl -n kube-system get secret | grep admin-user | awk '{print $1}') \
-            -o jsonpath="{.data.token}" | base64 --decode)
+                $(microk8s kubectl -n kube-system get secret | grep admin-user | awk '{print $1}') \
+                -o jsonpath="{.data.token}" 2>/dev/null | base64 --decode)
+        ((ATTEMPTS++))
+        echo -ne "Attempt $ATTEMPTS/15\r"
+    done
+    echo
+
+    if [[ -z "$TOKEN" ]]; then
+        echo -e "${RED}❗ Token generation failed after multiple attempts.${NC}"
+        echo "Possible dashboard provisioning still in progress."
+        echo
+        echo "Try checking manually with:"
+        echo -e "${CYAN}microk8s kubectl -n kube-system get secrets${NC}"
+        read -p "ENTER to return..."
+        return
     fi
 
-    [[ -z "$TOKEN" ]] && echo -e "${RED}❗ Token generation failed.${NC}" && read -p "ENTER..." && return
+    echo -e "${GREEN}TOKEN GENERATED SUCCESSFULLY:${NC}\n$TOKEN\n"
 
-    echo -e "${GREEN}TOKEN:${NC}\n$TOKEN\n"
-
-    # --------- UFW Auto Enable + Rule ---------
+    # --------- UFW Auto Enable & Rule ---------
     if command -v ufw >/dev/null 2>&1; then
         if ufw status | grep -q inactive; then
-            echo -e "${CYAN}UFW detected but inactive. Enabling automatically...${NC}"
+            echo -e "${CYAN}UFW detected but inactive — enabling...${NC}"
             yes | ufw enable >/dev/null 2>&1
-            echo -e "${GREEN}✔ UFW enabled${NC}"
         fi
-
         ufw allow 10443/tcp >/dev/null 2>&1
-        echo -e "${GREEN}✔ Port 10443/tcp allowed in firewall${NC}\n"
-    else
-        echo -e "${YELLOW}UFW not installed — skipping firewall setup.${NC}\n"
+        echo -e "${GREEN}✔ Port 10443 opened in UFW${NC}\n"
     fi
 
     # --------- Save Access Info ---------
@@ -83,7 +89,7 @@ dashboard_token(){
 
     echo -e "${CYAN}Access saved to:${NC} $INFO_FILE"
     echo -e "\nRun:\n  microk8s dashboard-proxy"
-    echo -e "Open in browser:\n  http://$SERVER_IP:10443\n"
+    echo -e "Then open:\n  ${CYAN}http://$SERVER_IP:10443${NC}\n"
 
     read -p "Press ENTER to continue..."
 }
