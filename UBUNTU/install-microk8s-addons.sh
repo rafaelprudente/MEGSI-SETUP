@@ -62,11 +62,11 @@ while true; do
     echo -e "${CYAN}==============================================${NC}"
     echo -e "${GREEN}            MicroK8s Addons Manager${NC}"
     echo -e "${CYAN}==============================================${NC}"
-    echo "1 - Enable addons (multiple select)"
-    echo "2 - Enable ALL recommended addons"
-    echo "3 - Show enabled addons"
+    echo -e "${YELLOW}1${NC} - Enable addons (multiple select)"
+    echo -e "${YELLOW}2${NC} - Enable ALL recommended addons"
+    echo -e "${YELLOW}3${NC} - Show enabled addons"
     echo ""
-    echo "99 - Exit"
+    echo -e "${YELLOW}99${NC} - Exit"
     echo -e "${CYAN}==============================================${NC}"
     read -p "Select: " opt
 
