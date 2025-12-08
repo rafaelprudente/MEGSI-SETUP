@@ -31,77 +31,52 @@ SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
 
 #=============== TOKEN FUNCTION ===============#
 dashboard_token(){
-    SCRIPT_DIR="$(pwd)"                # Pasta onde o script está rodando
+    SCRIPT_DIR="$(pwd)"
     INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 
     echo
-    echo -e "${YELLOW}Generating dashboard token...${NC}"
+    echo -e "${CYAN}Enabling NEW MicroK8s Dashboard...${NC}"
 
-    # -------- Locate secret automatically --------
-    ATTEMPTS=0
-    TOKEN=""
-    SECRET_NAME=""
+    # Habilita apenas o dashboard novo (sem legacy)
+    microk8s disable dashboard >/dev/null 2>&1      # remove legacy se existir
+    microk8s enable dashboard-microk8s >/dev/null 2>&1 & spinner
 
-    echo -e "${CYAN}Locating dashboard secret...${NC}"
+    echo -e "${GREEN}✔ New Kubernetes Dashboard enabled${NC}"
+    sleep 6
 
-    while [[ -z "$SECRET_NAME" && $ATTEMPTS -lt 20 ]]; do
-        SECRET_NAME=$(microk8s kubectl -n kube-system get secrets \
-            --field-selector type=kubernetes.io/service-account-token \
-            -o jsonpath="{.items[*].metadata.name}" \
-            | tr ' ' '\n' | grep -E 'admin|dashboard' | head -n 1)
+    # Gerar kubeconfig para acesso
+    echo -e "${YELLOW}Generating kubeconfig for dashboard access...${NC}"
 
-        ((ATTEMPTS++))
-        echo -ne "Attempt $ATTEMPTS/20...\r"
-        sleep 4
-    done
+    microk8s config > "$SCRIPT_DIR/kubeconfig"
+    chmod 600 "$SCRIPT_DIR/kubeconfig"
 
-    echo
-
-    if [[ -z "$SECRET_NAME" ]]; then
-        echo -e "${RED}No dashboard token found.${NC}"
-        microk8s kubectl -n kube-system get secret
-        read -p "ENTER..."
-        return
-    fi
-
-    TOKEN=$(microk8s kubectl -n kube-system get secret "$SECRET_NAME" \
-            -o jsonpath="{.data.token}" | base64 --decode)
-
-    if [[ -z "$TOKEN" ]]; then
-        echo -e "${RED}Token extraction failed.${NC}"
-        read -p "ENTER..."
-        return
-    fi
-
-    echo -e "${GREEN}✔ Token generated successfully:${NC}\n$TOKEN\n"
-
-    # -------- Auto enable firewall + allow port --------
+    # Abrir porta no firewall
     if command -v ufw >/dev/null 2>&1; then
         if ufw status | grep -q inactive; then
-            echo -e "${CYAN}Enabling UFW automatically...${NC}"
+            echo -e "${CYAN}UFW inactive — enabling...${NC}"
             yes | ufw enable >/dev/null 2>&1
         fi
         ufw allow 10443/tcp >/dev/null 2>&1
         echo -e "${GREEN}✔ Port 10443 opened in firewall${NC}"
     fi
 
-    # -------- Save info in SCRIPT DIRECTORY --------
-    echo "$TOKEN" > "$INFO_FILE"
-    echo "http://$SERVER_IP:10443" >> "$INFO_FILE"
-    echo "microk8s dashboard-proxy" >> "$INFO_FILE"
+    # Criar arquivo .info atualizado
+    echo "Dashboard URL: https://$SERVER_IP:10443"  > "$INFO_FILE"
+    echo "Kubeconfig generated at: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
+    echo "Run: microk8s dashboard-proxy --kubeconfig $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
 
-    echo -e "\n${GREEN}Info file saved at:${NC} $INFO_FILE"
-    echo -e "${CYAN}Opening Dashboard Proxy now...${NC}\n"
+    echo -e "\n${GREEN}Access information saved at:${NC} $INFO_FILE"
+    echo -e "Kubeconfig saved at: ${CYAN}$SCRIPT_DIR/kubeconfig${NC}\n"
 
-    # -------- Run dashboard-proxy --------
-    microk8s dashboard-proxy 
+    echo -e "${CYAN}Starting dashboard-proxy...${NC}\n"
+    microk8s dashboard-proxy --kubeconfig "$SCRIPT_DIR/kubeconfig"
 
-    echo -e "Access via browser:"
-    echo -e "${CYAN}http://$SERVER_IP:10443${NC}\n"
-    echo -e "TOKEN stored in: ${YELLOW}$INFO_FILE${NC}"
+    echo -e "\nOpen in browser:"
+    echo -e "  ${CYAN}https://$SERVER_IP:10443${NC}\n"
 
     read -p "Press ENTER to return to menu..."
 }
+
 
 #=============== SPINNER ===============#
 spinner(){
