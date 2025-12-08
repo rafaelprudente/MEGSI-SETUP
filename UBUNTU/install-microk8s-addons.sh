@@ -9,7 +9,6 @@ NC='\e[0m'
 
 #=============== SETTINGS ===============#
 ADDONS=("dns" "dashboard" "ingress" "storage" "helm" "metrics-server")
-INFO_FILE="$HOME/microk8s-dashboard.info"
 
 # Must be run as root
 if [[ $EUID -ne 0 ]]; then
@@ -29,52 +28,6 @@ microk8s status --wait-ready >/dev/null 2>&1 || { echo "MicroK8s not ready."; ex
 #=============== GET SERVER IP ===============#
 SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
 
-#=============== TOKEN FUNCTION ===============#
-dashboard_token(){
-    SCRIPT_DIR="$(pwd)"
-    INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
-
-    echo
-    echo -e "${CYAN}Enabling new MicroK8s Dashboard with Ingress...${NC}"
-
-    microk8s disable dashboard >/dev/null 2>&1
-    microk8s enable dashboard-microk8s >/dev/null 2>&1 & spinner
-    microk8s enable ingress >/dev/null 2>&1 & spinner
-
-    echo -e "${GREEN}✔ Dashboard enabled (new mode)${NC}"
-    echo -e "${GREEN}✔ Ingress enabled${NC}"
-
-    # Generate kubeconfig
-    echo -e "${YELLOW}Generating kubeconfig...${NC}"
-    microk8s config > "$SCRIPT_DIR/kubeconfig"
-    chmod 600 "$SCRIPT_DIR/kubeconfig"
-
-    # Firewall
-    if command -v ufw >/dev/null 2>&1; then
-        if ufw status | grep -q inactive; then
-            echo -e "${CYAN}Enabling UFW...${NC}"
-            yes | ufw enable >/dev/null 2>&1
-        fi
-        ufw allow 80/tcp >/dev/null 2>&1
-        ufw allow 443/tcp >/dev/null 2>&1
-        echo -e "${GREEN}✔ Firewall ports open (80/443)${NC}"
-    fi
-
-    DASH_URL="https://$SERVER_IP/dashboard"
-
-    echo "Dashboard URL: $DASH_URL"  >  "$INFO_FILE"
-    echo "kubeconfig: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
-
-    echo -e "\n${GREEN}Dashboard Ready via Ingress${NC}"
-    echo -e "Open in browser:"
-    echo -e "  ${CYAN}$DASH_URL${NC}"
-    echo
-    echo -e "Use kubeconfig:"
-    echo -e "  ${CYAN}KUBECONFIG=$SCRIPT_DIR/kubeconfig kubectl get pods -A${NC}\n"
-
-    read -p "ENTER to return..."
-}
-
 #=============== SPINNER ===============#
 spinner(){
     local pid=$!
@@ -85,28 +38,26 @@ spinner(){
     printf "\rDone!      \n"
 }
 
+#=============== Dashboard HTTP Function ===============#
 enable_dashboard_http(){
     SCRIPT_DIR="$(pwd)"
     INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
 
     echo
-    echo -e "${CYAN}Enabling Dashboard in HTTP mode (no TLS)...${NC}"
+    echo -e "${CYAN}Enabling Dashboard in HTTP mode (NO TLS)...${NC}"
 
     # Remove qualquer dashboard antigo
     microk8s disable dashboard >/dev/null 2>&1
     microk8s disable dashboard-microk8s >/dev/null 2>&1
 
-    # Instala dashboard novo + ingress
+    # Instalar dashboard novo + ingress
     microk8s enable dashboard-microk8s >/dev/null 2>&1 & spinner
     microk8s enable ingress >/dev/null 2>&1 & spinner
 
     echo -e "${GREEN}✔ Dashboard enabled${NC}"
     echo -e "${GREEN}✔ Ingress enabled${NC}"
 
-    # Criar Ingress HTTP puro
-    echo -e "${YELLOW}Creating HTTP ingress...${NC}"
-
-    cat <<EOF | microk8s kubectl apply -f -
+cat <<EOF | microk8s kubectl apply -f -
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -126,20 +77,14 @@ spec:
               number: 8443
 EOF
 
-    echo -e "${GREEN}✔ HTTP ingress created${NC}\n"
+    echo -e "${GREEN}✔ HTTP ingress created${NC}"
 
-    # Gera kubeconfig
     microk8s config > "$SCRIPT_DIR/kubeconfig"
     chmod 600 "$SCRIPT_DIR/kubeconfig"
 
-    # Firewall
     if command -v ufw >/dev/null 2>&1; then
-        if ufw status | grep -q inactive; then
-            echo -e "${CYAN}Enabling UFW...${NC}"
-            yes | ufw enable >/dev/null 2>&1
-        fi
         ufw allow 80/tcp >/dev/null 2>&1
-        echo -e "${GREEN}✔ Port 80 opened (HTTP access)${NC}\n"
+        echo -e "${GREEN}✔ Port 80 opened (HTTP access)${NC}"
     fi
 
     URL="http://$SERVER_IP/dashboard"
@@ -147,13 +92,18 @@ EOF
     echo "Dashboard URL: $URL" > "$INFO_FILE"
     echo "kubeconfig: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
 
-    echo -e "${GREEN}Dashboard accessible at:${NC} ${CYAN}$URL${NC}"
+    echo -e "\n${GREEN}Dashboard available at:${NC} ${CYAN}$URL${NC}"
     echo -e "Info saved in: ${YELLOW}$INFO_FILE${NC}"
 
     read -p "Press ENTER to return..."
 }
 
-#============== SHOW STATUS WITH ICONS ✔✖ ==============#
+#=============== Wrapper ===============#
+enable_new_dashboard(){
+    enable_dashboard_http
+}
+
+#============== SHOW STATUS ==============#
 show_status(){
     echo
     echo -e "${CYAN}Addon Status:${NC}"
@@ -167,47 +117,6 @@ show_status(){
         fi
     done
     echo
-}
-
-enable_new_dashboard(){
-    SCRIPT_DIR="$(pwd)"
-    INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
-
-    echo
-    echo -e "${CYAN}Installing NEW MicroK8s Dashboard with Ingress...${NC}"
-
-    microk8s disable dashboard >/dev/null 2>&1
-    microk8s enable dashboard-microk8s ingress >/dev/null 2>&1 & spinner
-
-    echo -e "${GREEN}✔ Dashboard enabled${NC}"
-    echo -e "${GREEN}✔ Ingress configured${NC}\n"
-
-    echo -e "${YELLOW}Generating kubeconfig...${NC}"
-    microk8s config > "$SCRIPT_DIR/kubeconfig"
-    chmod 600 "$SCRIPT_DIR/kubeconfig"
-
-    # Firewall
-    if command -v ufw >/dev/null 2>&1; then
-        if ufw status | grep -q inactive; then
-            echo -e "${CYAN}Enabling UFW...${NC}"
-            yes | ufw enable >/dev/null 2>&1
-        fi
-        ufw allow 80,443/tcp >/dev/null 2>&1
-        echo -e "${GREEN}✔ Ports 80/443 opened${NC}\n"
-    fi
-
-    enable_dashboard_http()
-
-    DASH_URL="https://$SERVER_IP/dashboard"
-
-    echo "Dashboard URL: $DASH_URL" > "$INFO_FILE"
-    echo "kubeconfig: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
-
-    echo -e "\n${GREEN}Dashboard running via Ingress${NC}"
-    echo -e "Open in browser:\n  ${CYAN}$DASH_URL${NC}"
-    echo -e "kubeconfig saved in: ${CYAN}$SCRIPT_DIR/kubeconfig${NC}"
-
-    read -p "Press ENTER to return..."
 }
 
 #=============== MENU ===============#
@@ -227,8 +136,6 @@ while true; do
     read -p "Choose an option: " opt
 
     case "$opt" in
-
-        # ---------------- Enable Multiple ---------------- #
         1)
             echo
             enabled=($(microk8s status --format short | grep enabled | awk '{print $1}'))
@@ -239,36 +146,31 @@ while true; do
             echo -e "${CYAN}Select addons to enable (space separated)${NC}"
             for i in "${!disabled[@]}"; do echo -e "${YELLOW}$((i+1))${NC} - ${disabled[$i]}"; done
             echo -e ""
-            echo -e "${YELLOW}99${NC} - Exit"
-            read -p "Choose an option: " -a choices
+            echo -e "${YELLOW}99${NC} - Cancel"
+            read -p "Choose: " -a choices
             [[ "${choices[*]}" =~ 99 ]] && continue
 
             for c in "${choices[@]}"; do
                 idx=$((c-1))
                 if [[ $idx -ge 0 && $idx < ${#disabled[@]} ]]; then
                     addon=${disabled[$idx]}
-                    echo "Enabling $addon..."
                     microk8s enable "$addon" >/dev/null 2>&1 & spinner
-                    [[ $addon == "dashboard" ]] && DASH=1
+                    [[ "$addon" == "dashboard" ]] && enable_new_dashboard
                 fi
             done
-            [[ "$DASH" == "1" ]] && enable_new_dashboard
         ;;
 
-        # ---------------- Enable ALL ---------------- #
         2)
             echo "Enabling all addons..."
             (microk8s enable ${ADDONS[*]} >/dev/null 2>&1) & spinner
             enable_new_dashboard
         ;;
 
-        # ---------------- Raw List ---------------- #
         3)
             microk8s status | sed -n '/addons:/,$p'
             read -p "ENTER..."
         ;;
 
-        # ---------------- Disable Multiple ---------------- #
         4)
             enabled=($(microk8s status --format short | grep enabled | awk '{print $1}'))
             [[ ${#enabled[@]} == 0 ]] && echo -e "${RED}Nothing to disable.${NC}" && read -p "ENTER..." && continue
@@ -283,9 +185,7 @@ while true; do
                 idx=$((c-1))
                 if [[ $idx -ge 0 && $idx < ${#enabled[@]} ]]; then
                     addon=${enabled[$idx]}
-                    echo "Disabling $addon..."
                     microk8s disable "$addon" >/dev/null 2>&1 & spinner
-                    echo -e "❌ ${RED}$addon disabled${NC}"
                 fi
             done
             read -p "ENTER..."
