@@ -94,7 +94,7 @@ while true; do
         1) run_script "$SCRIPT_A" "$REPO_BASE/$SCRIPT_A" ;;
         2) run_script "$SCRIPT_B" "$REPO_BASE/$SCRIPT_B" ;;
         3) run_script "$SCRIPT_C" "$REPO_BASE/$SCRIPT_C" ;;
-        4) run_script "$SCRIPT_C" "$REPO_BASE/$SCRIPT_C" ;;
+        4) run_script "$SCRIPT_D" "$REPO_BASE/$SCRIPT_D" ;;
         99)  clear
             exit 0
             ;;
