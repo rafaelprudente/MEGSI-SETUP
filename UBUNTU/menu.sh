@@ -87,7 +87,7 @@ while true; do
     case "$option" in
         1) run_script "$SCRIPT_A" "$REPO_BASE/$SCRIPT_A" ;;
         2) run_script "$SCRIPT_B" "$REPO_BASE/$SCRIPT_B" ;;
-        3) 
+        3)  clear
             exit 0
             ;;
         *)
