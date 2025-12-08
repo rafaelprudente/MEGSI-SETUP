@@ -12,7 +12,8 @@ REPO_BASE="https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBU
 
 SCRIPT_A="install-vbox-additions.sh"
 SCRIPT_B="set-static-ip.sh"
-SCRIPT_C="install-microk8s.sh" 
+SCRIPT_C="install-microk8s.sh"
+SCRIPT_D="install-microk8s-addons.sh"
 
 # ======== SIMPLE SPINNER ========
 spinner() {
@@ -66,18 +67,19 @@ run_script() {
     echo -e "\n${YELLOW}Press ENTER to return to the menu...${NC}"
     read
 
-#    sudo rm -rf $1
+    sudo rm -rf $1
 }
 
 # ======== MENU ========
 menu() {
     clear
     echo -e "${CYAN}========================================${NC}"
-    echo -e "${GREEN}                 MENU                  ${NC}"
+    echo -e "${GREEN}                 MENU${NC}"
     echo -e "${CYAN}========================================${NC}"
     echo -e "${YELLOW}1${NC} - Install VirtualBox Additions"
     echo -e "${YELLOW}2${NC} - Set Static IP"
     echo -e "${YELLOW}3${NC} - Install MicroK8s"
+    echo -e "${YELLOW}4${NC} - Install MicroK8s Addons"
     echo -e ""
     echo -e "${YELLOW}99${NC} - Exit"
     echo -e "${CYAN}========================================${NC}"

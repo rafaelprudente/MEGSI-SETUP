@@ -7,14 +7,23 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# Update system quietly
+USER_NAME=${SUDO_USER:-$USER}
+
+# ===== Check if MicroK8s is already installed =====
+if snap list | grep -q "^microk8s "; then
+    echo "=============================================="
+    echo "MicroK8s is already installed on this system!"
+    echo "=============================================="
+    exit 0
+fi
+
+echo "Updating system (silent mode)..."
 apt update -y >/dev/null 2>&1
 apt upgrade -y >/dev/null 2>&1
 apt autoremove -y >/dev/null 2>&1
 
-# ===== Check and install packages =====
+# Install required packages
 required_packages=("ufw" "nano" "snapd")
-
 for pkg in "${required_packages[@]}"; do
     if dpkg -s "$pkg" >/dev/null 2>&1; then
         echo "$pkg is already installed!"
@@ -27,26 +36,25 @@ done
 echo "Installing MicroK8s..."
 snap install microk8s --classic --channel=1.33
 
-usermod -aG microk8s $SUDO_USER
-mkdir -p /home/$SUDO_USER/.kube
-chmod 700 /home/$SUDO_USER/.kube
+# Permissions
+usermod -aG microk8s "$USER_NAME"
+mkdir -p /home/"$USER_NAME"/.kube
+chmod 700 /home/"$USER_NAME"/.kube
 
 echo
 echo "=============================================="
 echo "MicroK8s installed successfully!"
-echo "You must logout or reboot for group changes."
+echo "You MUST logout or reboot for group changes."
 echo "=============================================="
-echo "After reboot, run:"
-echo "   microk8s status"
-echo "   microk8s enable dns dashboard ingress"
-echo "=============================================="
+echo
+echo "⚠ IMPORTANT:"
+echo "After reboot your SSH terminal session will drop."
+echo "Reconnect and run addons script."
 echo
 
 read -p "Reboot now? (y/n): " answer
 if [[ "$answer" =~ ^[Yy]$ ]]; then
-    echo "Rebooting in 3 seconds..."
-    sleep 3
     reboot
 else
-    echo "Reboot canceled. Please reboot manually later."
+    echo "Reboot canceled. Run manually later to finish setup."
 fi
