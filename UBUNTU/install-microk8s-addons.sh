@@ -33,6 +33,8 @@ SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
 dashboard_token(){
     echo
     echo -e "${YELLOW}Generating access token...${NC}"
+
+    # --------- TOKEN ---------
     TOKEN=$(microk8s kubectl -n kube-system get secret \
         $(microk8s kubectl -n kube-system get secret | grep admin-user | awk '{print $1}') \
         -o jsonpath="{.data.token}" | base64 --decode)
@@ -41,17 +43,33 @@ dashboard_token(){
     echo "$TOKEN"
     echo
 
+    # --------- OPEN PORT ON FIREWALL ---------
+    if command -v ufw >/dev/null 2>&1; then
+        if ufw status | grep -q "Status: active"; then
+            echo -e "${CYAN}Opening port 10443 in UFW firewall...${NC}"
+            ufw allow 10443/tcp >/dev/null 2>&1
+            echo -e "${GREEN}Firewall updated: 10443/tcp allowed.${NC}\n"
+        else
+            echo -e "${YELLOW}UFW installed but not active — skipping firewall rule.${NC}\n"
+        fi
+    else
+        echo -e "${YELLOW}UFW not installed — skipping firewall rule.${NC}\n"
+    fi
+
+    # --------- SAVE TO FILE ---------
     echo "$TOKEN" > "$INFO_FILE"
     echo "http://$SERVER_IP:10443" >> "$INFO_FILE"
     echo "microk8s dashboard-proxy" >> "$INFO_FILE"
 
-    echo -e "${CYAN}Access saved to:${NC} $INFO_FILE"
-    echo -e "\n${GREEN}Token and dashboard URL stored successfully!${NC}"
-    echo -e "Run:\n  microk8s dashboard-proxy"
-    echo -e "Open:\n  http://$SERVER_IP:10443\n"
+    echo -e "${CYAN}Access info saved at:${NC} $INFO_FILE"
+    echo -e "\nRun the proxy to access Dashboard:"
+    echo -e "   ${CYAN}microk8s dashboard-proxy${NC}"
+    echo -e "Then open in browser:"
+    echo -e "   ${CYAN}http://$SERVER_IP:10443${NC}\n"
 
     read -p "Press ENTER to continue..."
 }
+
 
 #=============== SPINNER ===============#
 spinner(){
