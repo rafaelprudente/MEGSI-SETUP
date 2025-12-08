@@ -23,8 +23,6 @@ if ! snap list | grep -q "^microk8s "; then
     exit 1
 fi
 
-#microk8s status --wait-ready || { echo -e "${RED}MicroK8s not ready.${NC}"; exit 1; }
-
 #=============== GET SERVER IP ===============#
 SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
 
