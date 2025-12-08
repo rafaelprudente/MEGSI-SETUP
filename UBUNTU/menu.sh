@@ -16,19 +16,6 @@ SCRIPT_C="map-truenas-folder.sh"
 SCRIPT_D="install-microk8s.sh"
 SCRIPT_E="install-microk8s-addons.sh"
 
-# ======== SIMPLE SPINNER ========
-spinner() {
-    local delay=0.1
-    local spin='|/-\'
-    tput civis
-    for i in {1..15}; do
-        printf "\r${YELLOW}Preparing download... ${spin:$((i%4)):1}${NC}"
-        sleep $delay
-    done
-    printf "\r${CYAN}Starting download...${NC}"
-    tput cnorm
-}
-
 # ======== DOWNLOAD WITH PROGRESS BAR ========
 download_script() {
     url="$1"
@@ -36,19 +23,17 @@ download_script() {
 
     echo -e "${YELLOW}Script '$file' not found locally.${NC}"
 
-    spinner
-
     echo -e "${CYAN}Downloading '$file'...${NC}"
 
-    curl -# -L -o "$file" "$url"
+    sudo curl -# -L -o "$file" "$url"
 
     if [[ ! -s "$file" ]]; then
         echo -e "${RED}Download failed! Check connection or URL.${NC}"
-        rm -f "$file" 2>/dev/null
+        sudo rm -f "$file" 2>/dev/null
         return 1
     fi
 
-    chmod +x "$file"
+    sudo chmod +x "$file"
     echo -e "${GREEN}Download completed successfully!${NC}\n"
 }
 
@@ -62,7 +47,7 @@ run_script() {
     fi
 
     echo -e "${CYAN}Running $script...${NC}\n"
-    chmod +x "$script"
+    sudo chmod +x "$script"
     ./"$script"
 
     echo -e "\n${YELLOW}Press ENTER to return to the menu...${NC}"
