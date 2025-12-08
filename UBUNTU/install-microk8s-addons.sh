@@ -64,6 +64,7 @@ while true; do
             echo
             echo "Available addons:"
             for i in "${!ADDONS[@]}"; do
+                echo -e "${YELLOW}1${NC} -"
                 echo "[$((i+1))] ${ADDONS[$i]}"
             done
             echo "[0] Cancel"
