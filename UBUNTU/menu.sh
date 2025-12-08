@@ -11,7 +11,7 @@ NC='\e[0m' # No Color
 REPO_BASE="https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/UBUNTU"
 
 SCRIPT_A="install-vbox-additions.sh"
-SCRIPT_B="b.sh"
+SCRIPT_B="set-static-ip.sh"
 
 # ======== SIMPLE SPINNER ========
 spinner() {
