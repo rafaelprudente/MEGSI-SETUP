@@ -32,67 +32,84 @@ SERVER_IP=$(hostname -I | tr ' ' '\n' | grep '^192\.' | head -n 1)
 #=============== TOKEN FUNCTION ===============#
 dashboard_token(){
     echo
-    echo -e "${YELLOW}Generating access token...${NC}"
+    echo -e "${YELLOW}Generating dashboard access token...${NC}"
 
-    # --------- Ensure admin-user exists ---------
-    if ! microk8s kubectl -n kube-system get secret | grep -q admin-user; then
-        echo -e "${CYAN}Admin-user not found. Creating...${NC}"
-        microk8s kubectl create serviceaccount admin-user -n kube-system >/dev/null 2>&1
-        microk8s kubectl create clusterrolebinding admin-user-binding \
-            --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user >/dev/null 2>&1
+    # --------- Ensure service accounts are ready ---------
+    microk8s kubectl -n kube-system get sa >/dev/null 2>&1 || {
+        echo -e "${RED}Kubernetes not responding. Try again later.${NC}"
+        read -p "ENTER..."
+        return
+    }
 
-        echo -e "${GREEN}Admin-user created, waiting for Kubernetes...${NC}"
-    fi
-
-    # --------- TOKEN RETRY LOOP ---------
+    # --------- TOKEN SMART DISCOVERY ---------
     ATTEMPTS=0
     TOKEN=""
+    SECRET_NAME=""
 
-    echo -e "${CYAN}Waiting for dashboard secret to be generated...${NC}"
+    echo -e "${CYAN}Locating dashboard token secret...${NC}"
 
-    while [[ -z "$TOKEN" && $ATTEMPTS -lt 15 ]]; do
-        sleep 4
-        TOKEN=$(microk8s kubectl -n kube-system get secret \
-                $(microk8s kubectl -n kube-system get secret | grep admin-user | awk '{print $1}') \
-                -o jsonpath="{.data.token}" 2>/dev/null | base64 --decode)
+    while [[ -z "$SECRET_NAME" && $ATTEMPTS -lt 20 ]]; do
+        # Busca secrets de token do SA
+        SECRET_NAME=$(microk8s kubectl -n kube-system get secrets \
+            --field-selector type=kubernetes.io/service-account-token \
+            -o jsonpath="{.items[*].metadata.name}" \
+            | tr ' ' '\n' | grep -E 'admin|dashboard' | head -n 1)
+
         ((ATTEMPTS++))
-        echo -ne "Attempt $ATTEMPTS/15\r"
+        echo -ne "Attempt $ATTEMPTS/20 searching for token...\r"
+        sleep 4
     done
+
     echo
 
-    if [[ -z "$TOKEN" ]]; then
-        echo -e "${RED}❗ Token generation failed after multiple attempts.${NC}"
-        echo "Possible dashboard provisioning still in progress."
-        echo
-        echo "Try checking manually with:"
-        echo -e "${CYAN}microk8s kubectl -n kube-system get secrets${NC}"
-        read -p "ENTER to return..."
+    if [[ -z "$SECRET_NAME" ]]; then
+        echo -e "${RED}❗ No dashboard token secret found.${NC}"
+        echo "Available secrets:"
+        microk8s kubectl -n kube-system get secret
+        read -p "ENTER..."
         return
     fi
 
-    echo -e "${GREEN}TOKEN GENERATED SUCCESSFULLY:${NC}\n$TOKEN\n"
+    # --------- Extract Token ---------
+    TOKEN=$(microk8s kubectl -n kube-system get secret "$SECRET_NAME" \
+            -o jsonpath="{.data.token}" | base64 --decode 2>/dev/null)
 
-    # --------- UFW Auto Enable & Rule ---------
+    if [[ -z "$TOKEN" ]]; then
+        echo -e "${RED}❗ Token extraction failed even after secret discovery.${NC}"
+        echo "Try manual command:"
+        echo "microk8s kubectl -n kube-system get secret $SECRET_NAME -o jsonpath='{.data.token}' | base64 --decode"
+        read -p "ENTER..."
+        return
+    fi
+
+    echo -e "\n${GREEN}✔ TOKEN GENERATED SUCCESSFULLY:${NC}\n$TOKEN\n"
+
+    # --------- UFW Auto Enable + Rule ---------
     if command -v ufw >/dev/null 2>&1; then
         if ufw status | grep -q inactive; then
-            echo -e "${CYAN}UFW detected but inactive — enabling...${NC}"
+            echo -e "${CYAN}UFW detected but inactive — enabling automatically...${NC}"
             yes | ufw enable >/dev/null 2>&1
         fi
         ufw allow 10443/tcp >/dev/null 2>&1
         echo -e "${GREEN}✔ Port 10443 opened in UFW${NC}\n"
+    else
+        echo -e "${YELLOW}UFW not installed — skipping firewall rule.${NC}\n"
     fi
 
-    # --------- Save Access Info ---------
+    # --------- SAVE ACCESS INFO ---------
     echo "$TOKEN" > "$INFO_FILE"
     echo "http://$SERVER_IP:10443" >> "$INFO_FILE"
     echo "microk8s dashboard-proxy" >> "$INFO_FILE"
 
     echo -e "${CYAN}Access saved to:${NC} $INFO_FILE"
-    echo -e "\nRun:\n  microk8s dashboard-proxy"
-    echo -e "Then open:\n  ${CYAN}http://$SERVER_IP:10443${NC}\n"
+    echo -e "\nRun inside terminal:"
+    echo -e "  ${CYAN}microk8s dashboard-proxy${NC}"
+    echo -e "\nThen open in browser:"
+    echo -e "  ${CYAN}http://$SERVER_IP:10443${NC}\n"
 
-    read -p "Press ENTER to continue..."
+    read -p "Press ENTER to return to menu..."
 }
+
 
 #=============== SPINNER ===============#
 spinner(){
