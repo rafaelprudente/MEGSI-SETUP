@@ -78,4 +78,4 @@ echo "--------------------------------------------"
 echo " Installation complete. Reboot recommended."
 echo "--------------------------------------------"
 
-# sudo reboot
+sudo reboot
