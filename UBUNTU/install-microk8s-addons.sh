@@ -35,7 +35,7 @@ spinner(){
     while kill -0 $pid 2>/dev/null; do
         for i in {0..3}; do printf "\rProcessing ${spin:$i:1}"; sleep 0.1; done
     done
-    printf "\rDone!      \n"
+    printf "\rDone!"
 }
 
 #=============== Legacy Dashboard Function ===============#
@@ -47,8 +47,8 @@ enable_legacy_dashboard(){
     echo -e "${CYAN}Enabling Kubernetes Dashboard (Legacy)...${NC}"
 
     microk8s enable dns rbac >/dev/null 2>&1 & spinner
+    
     microk8s kubectl delete serviceaccount admin-user -n kube-system --ignore-not-found >/dev/null 2>&1 & spinner
-
     microk8s kubectl create serviceaccount admin-user -n kube-system >/dev/null 2>&1 & spinner
     microk8s kubectl delete clusterrolebinding admin-user-binding --ignore-not-found >/dev/null 2>&1 & spinner
     microk8s kubectl create clusterrolebinding admin-user-binding --clusterrole=cluster-admin --serviceaccount=kube-system:admin-user >/dev/null 2>&1 & spinner
