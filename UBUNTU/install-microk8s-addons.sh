@@ -20,8 +20,6 @@ fi
 #=============== INSTALL CHECK ===============#
 if ! snap list | grep -q "^microk8s "; then
     echo "MicroK8s is not installed!"
-    echo "Run first:"
-    echo "   sudo ./install-microk8s.sh"
     exit 1
 fi
 
@@ -108,8 +106,7 @@ while true; do
             read -p "Press ENTER to continue..."
         ;;
 
-        4)
-            echo "Exiting..."
+        99)
             exit 0
         ;;
 
