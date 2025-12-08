@@ -101,6 +101,45 @@ show_status(){
     echo
 }
 
+enable_new_dashboard(){
+    SCRIPT_DIR="$(pwd)"
+    INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
+
+    echo
+    echo -e "${CYAN}Installing NEW MicroK8s Dashboard with Ingress...${NC}"
+
+    microk8s disable dashboard >/dev/null 2>&1
+    microk8s enable dashboard-microk8s ingress >/dev/null 2>&1 & spinner
+
+    echo -e "${GREEN}✔ Dashboard enabled${NC}"
+    echo -e "${GREEN}✔ Ingress configured${NC}\n"
+
+    echo -e "${YELLOW}Generating kubeconfig...${NC}"
+    microk8s config > "$SCRIPT_DIR/kubeconfig"
+    chmod 600 "$SCRIPT_DIR/kubeconfig"
+
+    # Firewall
+    if command -v ufw >/dev/null 2>&1; then
+        if ufw status | grep -q inactive; then
+            echo -e "${CYAN}Enabling UFW...${NC}"
+            yes | ufw enable >/dev/null 2>&1
+        fi
+        ufw allow 80,443/tcp >/dev/null 2>&1
+        echo -e "${GREEN}✔ Ports 80/443 opened${NC}\n"
+    fi
+
+    DASH_URL="https://$SERVER_IP/dashboard"
+
+    echo "Dashboard URL: $DASH_URL" > "$INFO_FILE"
+    echo "kubeconfig: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
+
+    echo -e "\n${GREEN}Dashboard running via Ingress${NC}"
+    echo -e "Open in browser:\n  ${CYAN}$DASH_URL${NC}"
+    echo -e "kubeconfig saved in: ${CYAN}$SCRIPT_DIR/kubeconfig${NC}"
+
+    read -p "Press ENTER to return..."
+}
+
 #=============== MENU ===============#
 while true; do
     clear
@@ -143,14 +182,14 @@ while true; do
                     [[ $addon == "dashboard" ]] && DASH=1
                 fi
             done
-            [[ "$DASH" == "1" ]] && dashboard_token
+            [[ "$DASH" == "1" ]] && enable_new_dashboard
         ;;
 
         # ---------------- Enable ALL ---------------- #
         2)
             echo "Enabling all addons..."
             (microk8s enable ${ADDONS[*]} >/dev/null 2>&1) & spinner
-            dashboard_token
+            enable_new_dashboard
         ;;
 
         # ---------------- Raw List ---------------- #
