@@ -85,6 +85,74 @@ spinner(){
     printf "\rDone!      \n"
 }
 
+enable_dashboard_http(){
+    SCRIPT_DIR="$(pwd)"
+    INFO_FILE="$SCRIPT_DIR/microk8s-dashboard.info"
+
+    echo
+    echo -e "${CYAN}Enabling Dashboard in HTTP mode (no TLS)...${NC}"
+
+    # Remove qualquer dashboard antigo
+    microk8s disable dashboard >/dev/null 2>&1
+    microk8s disable dashboard-microk8s >/dev/null 2>&1
+
+    # Instala dashboard novo + ingress
+    microk8s enable dashboard-microk8s >/dev/null 2>&1 & spinner
+    microk8s enable ingress >/dev/null 2>&1 & spinner
+
+    echo -e "${GREEN}✔ Dashboard enabled${NC}"
+    echo -e "${GREEN}✔ Ingress enabled${NC}"
+
+    # Criar Ingress HTTP puro
+    echo -e "${YELLOW}Creating HTTP ingress...${NC}"
+
+    cat <<EOF | microk8s kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard-http
+  namespace: kube-system
+spec:
+  ingressClassName: public
+  rules:
+  - http:
+      paths:
+      - path: /dashboard
+        pathType: Prefix
+        backend:
+          service:
+            name: kubernetes-dashboard-microk8s
+            port:
+              number: 8443
+EOF
+
+    echo -e "${GREEN}✔ HTTP ingress created${NC}\n"
+
+    # Gera kubeconfig
+    microk8s config > "$SCRIPT_DIR/kubeconfig"
+    chmod 600 "$SCRIPT_DIR/kubeconfig"
+
+    # Firewall
+    if command -v ufw >/dev/null 2>&1; then
+        if ufw status | grep -q inactive; then
+            echo -e "${CYAN}Enabling UFW...${NC}"
+            yes | ufw enable >/dev/null 2>&1
+        fi
+        ufw allow 80/tcp >/dev/null 2>&1
+        echo -e "${GREEN}✔ Port 80 opened (HTTP access)${NC}\n"
+    fi
+
+    URL="http://$SERVER_IP/dashboard"
+
+    echo "Dashboard URL: $URL" > "$INFO_FILE"
+    echo "kubeconfig: $SCRIPT_DIR/kubeconfig" >> "$INFO_FILE"
+
+    echo -e "${GREEN}Dashboard accessible at:${NC} ${CYAN}$URL${NC}"
+    echo -e "Info saved in: ${YELLOW}$INFO_FILE${NC}"
+
+    read -p "Press ENTER to return..."
+}
+
 #============== SHOW STATUS WITH ICONS ✔✖ ==============#
 show_status(){
     echo
@@ -127,6 +195,8 @@ enable_new_dashboard(){
         ufw allow 80,443/tcp >/dev/null 2>&1
         echo -e "${GREEN}✔ Ports 80/443 opened${NC}\n"
     fi
+
+    enable_dashboard_http()
 
     DASH_URL="https://$SERVER_IP/dashboard"
 
