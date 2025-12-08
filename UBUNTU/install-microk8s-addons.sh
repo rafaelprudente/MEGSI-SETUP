@@ -64,13 +64,12 @@ while true; do
             echo
             echo "Available addons:"
             for i in "${!ADDONS[@]}"; do
-                echo -e "${YELLOW}1${NC} -"
-                echo "[$((i+1))] ${ADDONS[$i]}"
+                echo -e "${YELLOW}$((i+1))${NC} - ${ADDONS[$i]}"
             done
-            echo "[0] Cancel"
+            echo "[99] Cancel"
             read -p "Enable which addon? " choice
 
-            if [[ $choice -eq 0 ]]; then continue; fi
+            if [[ $choice -eq 99 ]]; then continue; fi
             index=$((choice-1))
 
             if [[ $index -ge 0 && $index < ${#ADDONS[@]} ]]; then
