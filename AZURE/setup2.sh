@@ -14,11 +14,16 @@ fi
 
 echo "Subindo os containers definidos em compose.yaml..."
 
-docker compose -f compose.yml up -d
+NEEDED=false
+
+docker inspect mariadb >/dev/null 2>&1 || NEEDED=true
+docker inspect kafka   >/dev/null 2>&1 || NEEDED=true
+
+$NEEDED && docker compose -f compose.yml up -d
 
 echo "Aguardando o MariaDB iniciar..."
 
-sleep 15
+sleep 60
 
 echo "Criando bancos de dados MEGSI e ITI no MariaDB..."
 
