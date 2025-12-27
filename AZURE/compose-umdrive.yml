@@ -22,11 +22,11 @@ services:
             - KAFKA_SERVER_URI=kafka:29092
         image: rafaelrpsantos/megsi-autenticator:latest
 
-    megsi-iti-autoscale:
-        container_name: megsi-iti-autoscale
+    megsi-iti-autoscaler:
+        container_name: megsi-iti-autoscaler
         networks:
             - megsi-net
-        image: rafaelrpsantos/megsi-iti-autoscale:latest
+        image: rafaelrpsantos/megsi-iti-autoscaler:latest
 
 networks:
     megsi-net:

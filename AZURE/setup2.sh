@@ -2,6 +2,9 @@
 
 set -e
 
+sudo apt install maven -y
+sudo apt install openjdk-21-jdk -y
+
 echo "Adicionando o user $USER ao grupo docker..."
 
 sudo usermod -aG docker $USER
@@ -53,13 +56,15 @@ sudo rm -rf repos
 git clone https://github.com/rafaelprudente/MEGSI-CONFIG-SERVER-DATA.git
 git clone https://github.com/rafaelprudente/MEGSI-AUTENTICADOR.git
 git clone https://github.com/rafaelprudente/MEGSI-ITI-SERVICE-FILES.git
+git clone https://github.com/rafaelprudente/MEGSI-ITI-AUTOSCALER.git
+git clone https://github.com/rafaelprudente/MEGSI-CONFIG-SERVER-FS.git
 
 echo "Copiando arquivos de configuração para /srv/configuration-server-fs..."
 
 cp MEGSI-CONFIG-SERVER-DATA/megsi-authenticator.yml /srv/configuration-server-fs/
 cp MEGSI-CONFIG-SERVER-DATA/iti-service-files.yaml /srv/configuration-server-fs/
 
-sudo apt install maven -y
+echo "Executando as migrations..."
 
 cd /home/azureuser/repos/MEGSI-AUTENTICADOR
 
@@ -71,8 +76,33 @@ mvn flyway:migrate -Dflyway.url=jdbc:mariadb://localhost:3306/MEGSI -Dflyway.use
 
 cd /home/azureuser
 
+echo "Gerando imagens..."
+
+cd /home/azureuser/repos/MEGSI-AUTENTICADOR
+mvn clean package
+sudo docker rmi rafaelrpsantos/megsi-autenticator:latest
+sudo docker build -t "rafaelrpsantos/megsi-autenticator:latest" .
+
+cd /home/azureuser/repos/MEGSI-ITI-SERVICE-FILES
+mvn clean package
+sudo docker rmi rafaelrpsantos/megsi-iti-service-files:latest
+sudo docker build -t "rafaelrpsantos/megsi-iti-service-files:latest" .
+
+cd /home/azureuser/repos/MEGSI-ITI-AUTOSCALER
+sudo docker rmi rafaelrpsantos/megsi-iti-autoscaler:latest
+sudo docker build -t "rafaelrpsantos/megsi-iti-autoscaler:latest" .
+
+cd /home/azureuser/repos/MEGSI-CONFIG-SERVER-FS
+mvn clean package
+sudo docker rmi rafaelrpsantos/megsi-config-server-fs:latest
+sudo docker build -t "rafaelrpsantos/megsi-config-server-fs:latest" .
+
+clear
+
+cd ~
+
 echo "Subindo os containers definidos em compose-umdrive.yml..."
 
-docker compose -f compose-umdrive.yml up -d
+sudo docker compose -f compose-umdrive.yml up -d
 
 echo "Processo concluído com sucesso."
