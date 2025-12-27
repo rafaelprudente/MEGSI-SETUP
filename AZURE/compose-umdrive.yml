@@ -110,7 +110,7 @@ services:
                 condition: service_healthy
 
     megsi-autoscaler:
-      image: rafaelrpsantos/megsi-iti-autoscale:latest
+      image: rafaelrpsantos/megsi-iti-autoscaler:latest
       container_name: megsi-autoscaler
       restart: always
       volumes:
