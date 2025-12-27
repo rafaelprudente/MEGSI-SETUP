@@ -57,7 +57,7 @@ services:
         - "--api.insecure=true"
         - "--metrics.prometheus=true"
         - "--metrics.prometheus.addrouterslabels=true"
-        - "--metrics.prometheus.addserviceslabels=true"        
+        - "--metrics.prometheus.addserviceslabels=true"
       ports:
         - "80:80"
         - "8080:8080"
@@ -122,7 +122,7 @@ services:
         - traefik-net
       environment:
         - RPS_UP=5
-        
+
 #.   Este serviço será iniciado pelo script dentro do container megsi-autoscaler
 #    megsi-iti-service-files:
 #      container_name: megsi-iti-service-files-1
