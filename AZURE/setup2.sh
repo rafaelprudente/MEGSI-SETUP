@@ -2,13 +2,19 @@
 
 set -e
 
+echo "Adicionando o user $USER ao grupo docker..."
+
+sudo usermod -aG docker $USER
+
 echo "Criando rede de para os containers..."
 
-docker network create megsi-net
+if ! docker network inspect megsi-net >/dev/null 2>&1; then
+  docker network create megsi-net
+fi
 
 echo "Subindo os containers definidos em compose.yaml..."
 
-docker compose -f compose.yaml up -d
+docker compose -f compose.yml up -d
 
 echo "Aguardando o MariaDB iniciar..."
 
