@@ -48,13 +48,10 @@ WORKDIR="$(pwd)/repos"
 mkdir -p "$WORKDIR"
 cd "$WORKDIR"
 
-rm -rf /repos/MEGSI-CONFIG-SERVER-DATA
+sudo rm -rf repos
+
 git clone https://github.com/rafaelprudente/MEGSI-CONFIG-SERVER-DATA.git
-
-rm -rf /repos/MEGSI-AUTENTICADOR
 git clone https://github.com/rafaelprudente/MEGSI-AUTENTICADOR.git
-
-rm -rf /repos/MEGSI-ITI-SERVICE-FILES
 git clone https://github.com/rafaelprudente/MEGSI-ITI-SERVICE-FILES.git
 
 echo "Copiando arquivos de configuração para /srv/configuration-server-fs..."
