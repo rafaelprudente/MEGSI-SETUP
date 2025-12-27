@@ -57,4 +57,16 @@ echo "Copiando arquivos de configuração para /srv/configuration-server-fs..."
 cp MEGSI-CONFIG-SERVER-DATA/megsi-authenticator.yml /srv/configuration-server-fs/
 cp MEGSI-CONFIG-SERVER-DATA/iti-service-files.yaml /srv/configuration-server-fs/
 
+sudo apt install maven -y
+
+cd /home/azureuser/repos/MEGSI-AUTENTICADOR
+
+mvn flyway:migrate -Dflyway.url=jdbc:mariadb://localhost:3306/MEGSI -Dflyway.user=root -Dflyway.password=uminho
+
+cd /home/azureuser/repos/MEGSI-ITI-SERVICE-FILES
+
+mvn flyway:migrate -Dflyway.url=jdbc:mariadb://localhost:3306/MEGSI -Dflyway.user=root -Dflyway.password=uminho
+
+cd /home/azureuser
+
 echo "Processo concluído com sucesso."
