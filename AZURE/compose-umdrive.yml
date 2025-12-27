@@ -1,0 +1,41 @@
+name: umdrive
+services:
+    megsi-config-server-fs:
+        container_name: megsi-config-server
+        networks:
+            - megsi-net
+        ports:
+            - 8888:8888
+        volumes:
+            - /srv/configuration-server-fs:/srv/configuration-server-fs
+        image: rafaelrpsantos/megsi-config-server-fs:latest
+    megsi-autenticator:
+        container_name: megsi-autenticador
+        networks:
+            - megsi-net
+        ports:
+            - 8080:8080
+        environment:
+            - SPRING_CLOUD_CONFIG_URI=http://megsi-config-server:8888
+            - MARIADB_SERVER_URI=mariadb
+            - MYSQL_ROOT_PASSWORD=uminho
+            - KAFKA_SERVER_URI=kafka:29092
+        image: rafaelrpsantos/megsi-autenticator:latest
+    megsi-iti-service-files:
+        container_name: megsi-iti-service-files
+        networks:
+            - megsi-net
+        ports:
+            - 8081:8081
+        environment:
+            - SPRING_CLOUD_CONFIG_URI=http://megsi-config-server:8888
+            - MARIADB_SERVER_URI=mariadb
+            - MYSQL_ROOT_PASSWORD=uminho
+            - KAFKA_SERVER_URI=kafka:29092
+        volumes:
+            - /mnt/NAS:/mnt/NAS
+        image: rafaelrpsantos/megsi-iti-service-files:latest
+networks:
+    megsi-net:
+        external: true
+        name: megsi-net

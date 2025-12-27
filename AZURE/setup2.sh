@@ -12,7 +12,7 @@ if ! docker network inspect megsi-net >/dev/null 2>&1; then
   docker network create megsi-net
 fi
 
-echo "Subindo os containers definidos em compose.yaml..."
+echo "Subindo os containers definidos em compose.yml..."
 
 NEEDED=false
 
@@ -70,5 +70,9 @@ cd /home/azureuser/repos/MEGSI-ITI-SERVICE-FILES
 mvn flyway:migrate -Dflyway.url=jdbc:mariadb://localhost:3306/MEGSI -Dflyway.user=root -Dflyway.password=uminho
 
 cd /home/azureuser
+
+echo "Subindo os containers definidos em compose-umdrive.yml..."
+
+docker compose -f compose-umdrive.yml up -d
 
 echo "Processo concluído com sucesso."
