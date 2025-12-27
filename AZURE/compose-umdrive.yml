@@ -21,20 +21,13 @@ services:
             - MYSQL_ROOT_PASSWORD=uminho
             - KAFKA_SERVER_URI=kafka:29092
         image: rafaelrpsantos/megsi-autenticator:latest
-    megsi-iti-service-files:
-        container_name: megsi-iti-service-files
+
+    megsi-iti-autoscale:
+        container_name: megsi-iti-autoscale
         networks:
             - megsi-net
-        ports:
-            - 8081:8081
-        environment:
-            - SPRING_CLOUD_CONFIG_URI=http://megsi-config-server:8888
-            - MARIADB_SERVER_URI=mariadb
-            - MYSQL_ROOT_PASSWORD=uminho
-            - KAFKA_SERVER_URI=kafka:29092
-        volumes:
-            - /mnt/NAS:/mnt/NAS
-        image: rafaelrpsantos/megsi-iti-service-files:latest
+        image: rafaelrpsantos/megsi-iti-autoscale:latest
+
 networks:
     megsi-net:
         external: true
