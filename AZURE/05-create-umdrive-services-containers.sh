@@ -2,4 +2,4 @@
 
 set -e
 
-docker compose -f compose-db-broker.yml up -d
+docker compose -f compose-umdrive.yml up -d
