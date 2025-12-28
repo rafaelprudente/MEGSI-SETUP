@@ -44,9 +44,6 @@ services:
       restart: always
       networks:
         - megsi-net
-      depends_on:
-          megsi-config-server-fs:
-              condition: service_healthy
 
     kafka:
         container_name: kafka
