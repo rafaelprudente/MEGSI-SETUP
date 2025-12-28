@@ -30,6 +30,12 @@ services:
             - KAFKA_SERVER_URI=kafka:29092
             - EMAIL_PASSWORD=awhxghptidnaprkw
         image: rafaelrpsantos/megsi-autenticator:latest
+        healthcheck:
+          test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep -q '\"status\":\"UP\"'"]
+          interval: 10s
+          timeout: 5s
+          retries: 12
+          start_period: 30s
         depends_on:
             megsi-config-server-fs:
                 condition: service_healthy
@@ -53,6 +59,9 @@ services:
             - 3000:80
         networks:
             - megsi-net
+        depends_on:
+            megsi-autenticator:
+                condition: service_healthy
 
 #.   Este serviço será iniciado pelo script dentro do container megsi-autoscaler
 #    megsi-iti-service-files:
