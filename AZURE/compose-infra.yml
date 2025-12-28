@@ -1,4 +1,5 @@
-name: MEGSI_ITI
+name: MEGSI_ITI_INFRA
+
 services:
     traefik:
       image: traefik:latest
@@ -82,5 +83,6 @@ networks:
     traefik-net:
         external: true
         name: traefik-net
+
 volumes:
     mariadb-data:
