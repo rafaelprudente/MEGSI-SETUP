@@ -28,7 +28,7 @@ curl -L \
   https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/AZURE/setup2.sh \
   -o /home/azureuser/setup2.sh
 curl -L \
-  https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/AZURE/compose.yml \
+  https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/AZURE/compose-infra.yml \
   -o /home/azureuser/compose.yml
 curl -L \
   https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/AZURE/compose-umdrive.yml \
