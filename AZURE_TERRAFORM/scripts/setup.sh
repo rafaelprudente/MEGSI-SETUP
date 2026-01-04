@@ -29,7 +29,7 @@ curl -L \
   -o /home/azureuser/setup2.sh
 curl -L \
   https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/AZURE/compose-infra.yml \
-  -o /home/azureuser/compose.yml
+  -o /home/azureuser/compose-infra.yml
 curl -L \
   https://raw.githubusercontent.com/rafaelprudente/MEGSI-SETUP/main/AZURE/compose-umdrive.yml \
   -o /home/azureuser/compose-umdrive.yml
