@@ -62,6 +62,7 @@ git clone https://github.com/rafaelprudente/MEGSI-AUTENTICADOR.git
 git clone https://github.com/rafaelprudente/MEGSI-ITI-SERVICE-FILES.git
 git clone https://github.com/rafaelprudente/MEGSI-ITI-AUTOSCALER.git
 git clone https://github.com/rafaelprudente/MEGSI-CONFIG-SERVER-FS.git
+git clone https://github.com/rafaelprudente/MEGSI-ITI-FRONTEND.git
 
 echo "Copiando arquivos de configuração para /srv/configuration-server-fs..."
 
